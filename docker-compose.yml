@@ -1,0 +1,5 @@
+version: '3'
+services:
+  agent-server:
+    image: 120011676/agent-server
+    restart: always
