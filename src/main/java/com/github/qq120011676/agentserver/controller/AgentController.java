@@ -23,7 +23,10 @@ public class AgentController {
     public void url(String url, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Enumeration<String> enumeration = request.getHeaderNames();
         String u = Base64.decodeStr(url);
-        Connection connection = Jsoup.connect(u);
+        Connection connection = Jsoup
+                .connect(u)
+                .maxBodySize(0)
+                .timeout(1000 * 60 * 30);
         while (enumeration.hasMoreElements()) {
             String n = enumeration.nextElement();
             if (Objects.equals("host", n)) {
@@ -39,14 +42,15 @@ public class AgentController {
         response.setStatus(resp.statusCode());
         Map<String, String> headers = resp.headers();
         headers.forEach(response::setHeader);
-        byte[] bs = new byte[1024 * 8];
         try (BufferedInputStream bin = resp.bodyStream();
              OutputStream out = response.getOutputStream()) {
-            int len;
-            while ((len = bin.read(bs, 0, bs.length)) != -1) {
-                out.write(bs, 0, len);
-            }
+            bin.transferTo(out);
             out.flush();
+//            int len;
+//            while ((len = bin.read(bs, 0, bs.length)) != -1) {
+//                out.write(bs, 0, len);
+//            }
+//            out.flush();
         }
     }
 }
