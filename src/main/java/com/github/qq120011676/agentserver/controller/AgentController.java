@@ -1,27 +1,52 @@
 package com.github.qq120011676.agentserver.controller;
 
 import cn.hutool.core.codec.Base64;
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
-import org.springframework.http.ResponseEntity;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/agent")
 public class AgentController {
 
     @RequestMapping("/get")
-    public ResponseEntity<byte[]> url(String url) {
+    public void url(String url, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Enumeration<String> enumeration = request.getHeaderNames();
         String u = Base64.decodeStr(url);
-        try (HttpResponse httpResponse = HttpRequest.get(u).execute()) {
-            String ct = httpResponse.header("Content-Type");
-            String cd = httpResponse.header("Content-Disposition");
-            return ResponseEntity.status(httpResponse.getStatus())
-                    .header("Content-Type", ct)
-                    .header("Content-Disposition", cd)
-                    .body(httpResponse.bodyBytes());
+        Connection connection = Jsoup.connect(u);
+        while (enumeration.hasMoreElements()) {
+            String n = enumeration.nextElement();
+            if (Objects.equals("host", n)) {
+                continue;
+            }
+            String v = request.getHeader(n);
+            connection.header(n, v);
+        }
+        Connection.Response resp = connection
+                .ignoreContentType(true)
+                .ignoreHttpErrors(true)
+                .execute();
+        response.setStatus(resp.statusCode());
+        Map<String, String> headers = resp.headers();
+        headers.forEach(response::setHeader);
+        byte[] bs = new byte[1024 * 8];
+        try (BufferedInputStream bin = resp.bodyStream();
+             OutputStream out = response.getOutputStream()) {
+            int len;
+            while ((len = bin.read(bs, 0, bs.length)) != -1) {
+                out.write(bs, 0, len);
+            }
+            out.flush();
         }
     }
 }
