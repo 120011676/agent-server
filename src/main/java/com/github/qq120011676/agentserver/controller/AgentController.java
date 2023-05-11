@@ -46,11 +46,6 @@ public class AgentController {
              OutputStream out = response.getOutputStream()) {
             bin.transferTo(out);
             out.flush();
-//            int len;
-//            while ((len = bin.read(bs, 0, bs.length)) != -1) {
-//                out.write(bs, 0, len);
-//            }
-//            out.flush();
         }
     }
 }
