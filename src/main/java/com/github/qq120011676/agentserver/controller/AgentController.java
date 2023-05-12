@@ -27,12 +27,14 @@ public class AgentController {
                 .connect(u)
                 .maxBodySize(0)
                 .timeout(1000 * 60 * 30);
+        System.out.println("========请求headers==========");
         while (enumeration.hasMoreElements()) {
             String n = enumeration.nextElement();
             if (Objects.equals("host", n)) {
                 continue;
             }
             String v = request.getHeader(n);
+            System.out.println(n + ":" + v);
             connection.header(n, v);
         }
         Connection.Response resp = connection
@@ -41,6 +43,10 @@ public class AgentController {
                 .execute();
         response.setStatus(resp.statusCode());
         Map<String, String> headers = resp.headers();
+        System.out.println("---------应答headers----------");
+        headers.forEach((n, v) -> {
+            System.out.println(n + ":" + v);
+        });
         headers.forEach(response::setHeader);
         try (BufferedInputStream bin = resp.bodyStream();
              OutputStream out = response.getOutputStream()) {
