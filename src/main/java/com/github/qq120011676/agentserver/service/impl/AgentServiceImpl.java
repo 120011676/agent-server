@@ -6,25 +6,21 @@ import cn.hutool.http.HttpUtil;
 import com.github.qq120011676.agentserver.controller.req.AgentGetReq;
 import com.github.qq120011676.agentserver.controller.resp.AgentGetResp;
 import com.github.qq120011676.agentserver.service.AgentService;
-import jakarta.annotation.Resource;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
 public class AgentServiceImpl implements AgentService {
-    @Resource
-    private RedisTemplate<String, AgentGetResp> redisTemplate;
+    private final Map<String, AgentGetResp> MAP = new HashMap<>(100000);
 
     @Override
     public AgentGetResp get(AgentGetReq req) {
-        ValueOperations<String, AgentGetResp> valueOperations = redisTemplate.opsForValue();
         if (Objects.isNull(req.getCache())
                 || Objects.equals(req.getCache(), Boolean.TRUE)) {
-            AgentGetResp resp = valueOperations.get(req.getUrl());
+            AgentGetResp resp = MAP.get(req.getUrl());
             if (Objects.nonNull(resp)) {
                 return resp;
             }
@@ -34,7 +30,11 @@ public class AgentServiceImpl implements AgentService {
             AgentGetResp resp = new AgentGetResp();
             resp.setBytes(httpResponse.bodyBytes());
             resp.setContentType(httpResponse.header("Content-Type"));
-            valueOperations.set(req.getUrl(), resp);
+            try {
+                MAP.put(req.getUrl(), resp);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             return resp;
         }
     }
